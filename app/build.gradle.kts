@@ -13,8 +13,8 @@ android {
         applicationId = "com.astracut.v60"
         minSdk = 26
         targetSdk = 36
-        versionCode = 60101
-        versionName = "6.0.1"
+        versionCode = 60102
+        versionName = "6.0.2"
     }
 }
 dependencies {
