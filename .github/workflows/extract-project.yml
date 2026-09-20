@@ -38,13 +38,15 @@ jobs:
             exit 1
           fi
 
+          # The ZIP contains the real Android build workflow.
+          # Do not copy workflow files in this Actions-token commit.
+          # We will add the real workflow separately with GitHub's workflow-capable connector.
+          rm -rf "$ROOT_DIR/.github/workflows"
+
           cp -a "$ROOT_DIR"/. ./
 
           rm -rf .astra_extract
           rm -f "$ZIP"
-
-          # Remove this one-time extraction workflow.
-          rm -f .github/workflows/extract-project.yml
 
       - name: Commit extracted project
         shell: bash
