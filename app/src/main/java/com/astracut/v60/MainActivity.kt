@@ -8,7 +8,6 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -26,10 +25,16 @@ class MainActivity : Activity() {
     private var trimInMs = 0L
     private var trimOutMs = 0L
 
-    private val openVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@registerForActivityResult
-        runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-        loadVideo(uri)
+    private val OPEN_VIDEO_REQUEST = 1001
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == OPEN_VIDEO_REQUEST && resultCode == RESULT_OK) {
+            data?.data?.let { uri ->
+                runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                loadVideo(uri)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +61,7 @@ class MainActivity : Activity() {
 
         root.addView(Button(this).apply {
             text = "＋  IMPORT VIDEO"
-            setOnClickListener { openVideo.launch(arrayOf("video/*")) }
+            setOnClickListener {\n                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {\n                    addCategory(Intent.CATEGORY_OPENABLE)\n                    type = "video/*"\n                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)\n                }\n                startActivityForResult(intent, OPEN_VIDEO_REQUEST)\n            }
         }, LinearLayout.LayoutParams(-1, 52))
 
         playerView = PlayerView(this).apply {
