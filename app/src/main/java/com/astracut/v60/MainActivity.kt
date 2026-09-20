@@ -61,7 +61,14 @@ class MainActivity : Activity() {
 
         root.addView(Button(this).apply {
             text = "＋  IMPORT VIDEO"
-            setOnClickListener {\n                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {\n                    addCategory(Intent.CATEGORY_OPENABLE)\n                    type = "video/*"\n                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)\n                }\n                startActivityForResult(intent, OPEN_VIDEO_REQUEST)\n            }
+            setOnClickListener {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "video/*"
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                }
+                startActivityForResult(intent, OPEN_VIDEO_REQUEST)
+            }
         }, LinearLayout.LayoutParams(-1, 52))
 
         playerView = PlayerView(this).apply {
