@@ -9,14 +9,14 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import java.util.Locale
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     private var player: ExoPlayer? = null
     private lateinit var playerView: PlayerView
     private lateinit var seekBar: SeekBar
