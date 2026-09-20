@@ -1,0 +1,65 @@
+name: Extract AstraCut Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract GitHub-ready ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ZIP="$(find . -maxdepth 1 -type f -name 'AstraCut-V6.0-Clean-Rebuild-6.0.1-GitHub-Ready.zip' -print -quit)"
+
+          if [ -z "$ZIP" ]; then
+            echo "ZIP file not found."
+            exit 1
+          fi
+
+          rm -rf .astra_extract
+          mkdir -p .astra_extract
+
+          unzip -q "$ZIP" -d .astra_extract
+
+          ROOT_DIR=".astra_extract/AstraCut-Pro-V6.0-Integrated-Production-Master"
+
+          if [ ! -f "$ROOT_DIR/settings.gradle.kts" ] || [ ! -d "$ROOT_DIR/app" ]; then
+            echo "Unexpected ZIP structure."
+            find .astra_extract -maxdepth 3 -print
+            exit 1
+          fi
+
+          cp -a "$ROOT_DIR"/. ./
+
+          rm -rf .astra_extract
+          rm -f "$ZIP"
+
+          # Remove this one-time extraction workflow.
+          rm -f .github/workflows/extract-project.yml
+
+      - name: Commit extracted project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Extract AstraCut project from GitHub-ready ZIP"
+          git push
