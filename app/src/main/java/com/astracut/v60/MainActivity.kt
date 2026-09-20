@@ -173,7 +173,7 @@ class MainActivity : Activity() {
                     if (state == Player.STATE_READY) {
                         trimInMs = 0L
                         trimOutMs = exo.duration.coerceAtLeast(0L)
-                        statusLabel.text = "Video siap — \${format(exo.duration)}"
+                        statusLabel.text = "Video siap — ${format(exo.duration)}"
                         exportButton.isEnabled = exo.duration > 0L
                         updateProgress()
                     }
@@ -186,7 +186,7 @@ class MainActivity : Activity() {
     private fun updateTrimStatus() {
         val duration = player?.duration ?: 0L
         val end = if (trimOutMs > 0L) trimOutMs else duration
-        statusLabel.text = "IN \${format(trimInMs)}  •  OUT \${format(end)}"
+        statusLabel.text = "IN ${format(trimInMs)}  •  OUT ${format(end)}"
     }
 
     private fun exportTrimmedVideo() {
@@ -204,7 +204,7 @@ class MainActivity : Activity() {
         exportButton.isEnabled = false
         statusLabel.text = "Mengekspor MP4…"
 
-        val outputFile = File(cacheDir, "astracut_export_\${System.currentTimeMillis()}.mp4")
+        val outputFile = File(cacheDir, "astracut_export_${System.currentTimeMillis()}.mp4")
         val clipping = MediaItem.ClippingConfiguration.Builder()
             .setStartPositionMs(trimInMs)
             .setEndPositionMs(end)
@@ -230,7 +230,7 @@ class MainActivity : Activity() {
                         exporting = false
                         exportButton.isEnabled = true
                         outputFile.delete()
-                        statusLabel.text = "Export gagal: \${exception.getErrorCodeName()}"
+                        statusLabel.text = "Export gagal: ${exception.getErrorCodeName()}"
                     }
                 }
             })
@@ -242,12 +242,12 @@ class MainActivity : Activity() {
             exporting = false
             exportButton.isEnabled = true
             outputFile.delete()
-            statusLabel.text = "Export gagal: \${it.message ?: "kesalahan tidak diketahui"}"
+            statusLabel.text = "Export gagal: ${it.message ?: "kesalahan tidak diketahui"}"
         }
     }
 
     private fun saveExportToMovies(source: File) {
-        val name = "AstraCut_\${System.currentTimeMillis()}.mp4"
+        val name = "AstraCut_${System.currentTimeMillis()}.mp4"
         val values = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, name)
             put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
@@ -277,7 +277,7 @@ class MainActivity : Activity() {
             statusLabel.text = "Export selesai — tersimpan di Movies/AstraCut."
         } catch (t: Throwable) {
             contentResolver.delete(outputUri, null, null)
-            statusLabel.text = "Gagal menyimpan hasil: \${t.message ?: "kesalahan tidak diketahui"}"
+            statusLabel.text = "Gagal menyimpan hasil: ${t.message ?: "kesalahan tidak diketahui"}"
         } finally {
             exporting = false
             exportButton.isEnabled = true
@@ -290,7 +290,7 @@ class MainActivity : Activity() {
         val duration = exo.duration
         if (duration > 0L) {
             seekBar.progress = (exo.currentPosition * 1000L / duration).toInt().coerceIn(0, 1000)
-            timeLabel.text = "\${format(exo.currentPosition)} / \${format(duration)}"
+            timeLabel.text = "${format(exo.currentPosition)} / ${format(duration)}"
         }
         seekBar.postDelayed({ updateProgress() }, 250)
     }
