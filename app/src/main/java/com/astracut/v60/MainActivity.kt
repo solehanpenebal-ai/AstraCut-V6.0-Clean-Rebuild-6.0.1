@@ -36,6 +36,7 @@ class MainActivity : Activity() {
     private var player: ExoPlayer? = null
     private var transformer: Transformer? = null
     private var exporting = false
+    private var musicUri: Uri? = null
     private lateinit var playerView: PlayerView
     private lateinit var seekBar: SeekBar
     private lateinit var timeLabel: TextView
@@ -50,6 +51,7 @@ class MainActivity : Activity() {
     private val history = EditHistory()
     private var selectedIndex = -1
     private val OPEN_VIDEO_REQUEST = 1001
+    private val OPEN_AUDIO_REQUEST = 1002
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +60,12 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != OPEN_VIDEO_REQUEST || resultCode != RESULT_OK) return
+        if (resultCode != RESULT_OK) return
+        if (requestCode == OPEN_AUDIO_REQUEST) {
+            data?.data?.let { importMusic(it) }
+            return
+        }
+        if (requestCode != OPEN_VIDEO_REQUEST) return
         val uris = mutableListOf<Uri>()
         data?.clipData?.let { cd -> for (i in 0 until cd.itemCount) uris += cd.getItemAt(i).uri }
         data?.data?.let { if (uris.isEmpty()) uris += it }
@@ -90,6 +97,17 @@ class MainActivity : Activity() {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                 }
                 startActivityForResult(intent, OPEN_VIDEO_REQUEST)
+            }
+        }, LinearLayout.LayoutParams(-1, 50))
+        root.addView(Button(this).apply {
+            text = "♫  IMPORT MUSIC / AUDIO"
+            setOnClickListener {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "audio/*"
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                }
+                startActivityForResult(intent, OPEN_AUDIO_REQUEST)
             }
         }, LinearLayout.LayoutParams(-1, 50))
         playerView = PlayerView(this).apply {
@@ -143,6 +161,12 @@ class MainActivity : Activity() {
     private fun actionButton(title: String, click: () -> Unit) = Button(this).apply {
         text = title
         setOnClickListener { click() }
+    }
+
+    private fun importMusic(uri: Uri) {
+        musicUri = uri
+        statusLabel.text = "Music terpasang. Akan di-loop sepanjang project saat export."
+        refreshUi()
     }
 
     private fun importUris(uris: List<Uri>) {
@@ -278,6 +302,9 @@ class MainActivity : Activity() {
         redoButton.isEnabled = history.canRedo
         splitButton.isEnabled = selectedIndex >= 0
         exportButton.isEnabled = clips.isNotEmpty() && !exporting
+        if (clips.isNotEmpty()) {
+            exportButton.text = if (musicUri != null) "EXPORT MP4 + MUSIC" else "EXPORT PROJECT MP4"
+        }
     }
 
     private fun exportProject() {
@@ -297,8 +324,17 @@ class MainActivity : Activity() {
                 MediaItem.Builder().setUri(clip.uri).setClippingConfiguration(clipping).build()
             ).build()
         }
-        val sequence = EditedMediaItemSequence.Builder().addItems(editedItems).build()
-        val composition = Composition.Builder(sequence).build()
+        val videoSequence = EditedMediaItemSequence.withAudioAndVideoFrom(editedItems)
+        val composition = if (musicUri != null) {
+            val backgroundAudio = EditedMediaItem.Builder(MediaItem.fromUri(musicUri!!)).build()
+            val backgroundSequence = EditedMediaItemSequence.withAudioFrom(listOf(backgroundAudio))
+                .buildUpon()
+                .setIsLooping(true)
+                .build()
+            Composition.Builder(videoSequence, backgroundSequence).build()
+        } else {
+            Composition.Builder(videoSequence).build()
+        }
         transformer = Transformer.Builder(this)
             .addListener(object : Transformer.Listener {
                 override fun onCompleted(composition: Composition, result: ExportResult) {
@@ -344,7 +380,7 @@ class MainActivity : Activity() {
             values.clear()
             values.put(MediaStore.Video.Media.IS_PENDING, 0)
             contentResolver.update(outputUri, values, null, null)
-            statusLabel.text = "Export selesai — Movies/AstraCut."
+            statusLabel.text = if (musicUri != null) "Export selesai + music — Movies/AstraCut." else "Export selesai — Movies/AstraCut."
         } catch (t: Throwable) {
             contentResolver.delete(outputUri, null, null)
             statusLabel.text = "Gagal menyimpan hasil: " + (t.message ?: "kesalahan tidak diketahui")
