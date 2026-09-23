@@ -16,6 +16,8 @@ import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Effect
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.SpeedParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Crop
 import androidx.media3.effect.ScaleAndRotateTransformation
@@ -139,6 +141,11 @@ class MainActivity : Activity() {
         timeline = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         scroll.addView(timeline)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 82))
+        val speedRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        speedRow.addView(actionButton("0.5×") { setSpeedSelected(0.5f) }, LinearLayout.LayoutParams(0, 48, 1f))
+        speedRow.addView(actionButton("1×") { setSpeedSelected(1f) }, LinearLayout.LayoutParams(0, 48, 1f))
+        speedRow.addView(actionButton("2×") { setSpeedSelected(2f) }, LinearLayout.LayoutParams(0, 48, 1f))
+        root.addView(speedRow)
         val editRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         undoButton = actionButton("UNDO") { undo() }
         redoButton = actionButton("REDO") { redo() }
@@ -196,6 +203,7 @@ class MainActivity : Activity() {
             exo.setMediaItem(MediaItem.fromUri(clip.uri))
             exo.prepare()
             applyPreviewEffects()
+            exo.playbackParameters = PlaybackParameters(clip.speed, clip.speed)
             exo.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
@@ -237,6 +245,15 @@ class MainActivity : Activity() {
         clip.endMs = pos
         refreshUi()
         statusLabel.text = "Clip " + (selectedIndex + 1) + ": OUT " + format(pos)
+    }
+
+    private fun setSpeedSelected(speed: Float) {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.speed = speed
+        player?.playbackParameters = PlaybackParameters(speed, speed)
+        statusLabel.text = "Kecepatan clip: " + speed + "x"
+        refreshUi()
     }
 
     private fun rotateSelected() {
@@ -393,6 +410,8 @@ class MainActivity : Activity() {
             }
             EditedMediaItem.Builder(mediaItem)
                 .setEffects(Effects(emptyList(), videoEffects))
+                .setSpeed(SpeedParameters(clip.speed, clip.speed))
+                .setFrameRate(60)
                 .build()
         }
         val videoSequence = EditedMediaItemSequence.withAudioAndVideoFrom(editedItems)
