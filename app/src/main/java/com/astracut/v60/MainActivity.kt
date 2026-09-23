@@ -16,6 +16,9 @@ import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Crop
+import androidx.media3.effect.Effects
+import androidx.media3.effect.ScaleAndRotateTransformation
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
@@ -143,6 +146,11 @@ class MainActivity : Activity() {
         editRow.addView(redoButton, LinearLayout.LayoutParams(0, 48, 1f))
         editRow.addView(splitButton, LinearLayout.LayoutParams(0, 48, 1f))
         root.addView(editRow)
+        val transformRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        transformRow.addView(actionButton("ROTATE 90°") { rotateSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
+        transformRow.addView(actionButton("CROP CENTER") { cropCenterSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
+        transformRow.addView(actionButton("RESET VIEW") { resetTransformSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
+        root.addView(transformRow)
         val trimRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         trimRow.addView(actionButton("SET IN") { setIn() }, LinearLayout.LayoutParams(0, 48, 1f))
         trimRow.addView(actionButton("SET OUT") { setOut() }, LinearLayout.LayoutParams(0, 48, 1f))
@@ -186,6 +194,7 @@ class MainActivity : Activity() {
             playerView.player = exo
             exo.setMediaItem(MediaItem.fromUri(clip.uri))
             exo.prepare()
+            applyPreviewEffects()
             exo.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
@@ -227,6 +236,54 @@ class MainActivity : Activity() {
         clip.endMs = pos
         refreshUi()
         statusLabel.text = "Clip " + (selectedIndex + 1) + ": OUT " + format(pos)
+    }
+
+    private fun rotateSelected() {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.rotationDegrees = (clip.rotationDegrees + 90f) % 360f
+        applyPreviewEffects()
+        statusLabel.text = "Rotasi clip: " + clip.rotationDegrees.toInt() + "°"
+        refreshUi()
+    }
+
+    private fun cropCenterSelected() {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.cropLeft = 0.12f
+        clip.cropRight = 0.12f
+        clip.cropTop = 0.12f
+        clip.cropBottom = 0.12f
+        applyPreviewEffects()
+        statusLabel.text = "Crop center diterapkan."
+        refreshUi()
+    }
+
+    private fun resetTransformSelected() {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.rotationDegrees = 0f
+        clip.cropLeft = 0f
+        clip.cropRight = 0f
+        clip.cropTop = 0f
+        clip.cropBottom = 0f
+        applyPreviewEffects()
+        statusLabel.text = "Transformasi visual di-reset."
+        refreshUi()
+    }
+
+    private fun applyPreviewEffects() {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        val effects = mutableListOf<androidx.media3.effect.Effect>()
+        if (clip.rotationDegrees != 0f) {
+            effects += ScaleAndRotateTransformation.Builder()
+                .setRotationDegrees(clip.rotationDegrees)
+                .build()
+        }
+        if (clip.cropLeft != 0f || clip.cropRight != 0f || clip.cropTop != 0f || clip.cropBottom != 0f) {
+            effects += Crop(-clip.cropLeft, 1f - clip.cropRight, -clip.cropTop, 1f - clip.cropBottom)
+        }
+        player?.setVideoEffects(effects)
     }
 
     private fun resetSelectedClip() {
@@ -320,9 +377,22 @@ class MainActivity : Activity() {
                 .setStartPositionMs(clip.startMs)
                 .setEndPositionMs(end)
                 .build()
-            EditedMediaItem.Builder(
-                MediaItem.Builder().setUri(clip.uri).setClippingConfiguration(clipping).build()
-            ).build()
+            val mediaItem = MediaItem.Builder()
+                .setUri(clip.uri)
+                .setClippingConfiguration(clipping)
+                .build()
+            val videoEffects = mutableListOf<androidx.media3.effect.Effect>()
+            if (clip.rotationDegrees != 0f) {
+                videoEffects += ScaleAndRotateTransformation.Builder()
+                    .setRotationDegrees(clip.rotationDegrees)
+                    .build()
+            }
+            if (clip.cropLeft != 0f || clip.cropRight != 0f || clip.cropTop != 0f || clip.cropBottom != 0f) {
+                videoEffects += Crop(-clip.cropLeft, 1f - clip.cropRight, -clip.cropTop, 1f - clip.cropBottom)
+            }
+            EditedMediaItem.Builder(mediaItem)
+                .setEffects(Effects(emptyList(), videoEffects))
+                .build()
         }
         val videoSequence = EditedMediaItemSequence.withAudioAndVideoFrom(editedItems)
         val composition = if (musicUri != null) {
