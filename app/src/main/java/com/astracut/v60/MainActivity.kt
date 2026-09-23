@@ -15,7 +15,6 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.Effect
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Crop
 import androidx.media3.effect.ScaleAndRotateTransformation
@@ -275,7 +274,7 @@ class MainActivity : Activity() {
 
     private fun applyPreviewEffects() {
         val clip = clips.getOrNull(selectedIndex) ?: return
-        val effects = mutableListOf<androidx.media3.effect.Effect>()
+        val effects = mutableListOf<androidx.media3.effect.GlEffect>()
         if (clip.rotationDegrees != 0f) {
             effects += ScaleAndRotateTransformation.Builder()
                 .setRotationDegrees(clip.rotationDegrees)
@@ -389,7 +388,7 @@ class MainActivity : Activity() {
                     .build()
             }
             if (clip.cropLeft != 0f || clip.cropRight != 0f || clip.cropTop != 0f || clip.cropBottom != 0f) {
-                videoEffects += Crop(-clip.cropLeft, 1f - clip.cropRight, -clip.cropTop, 1f - clip.cropBottom)
+                videoEffects += Crop(-1f + 2f * clip.cropLeft, 1f - 2f * clip.cropRight, -1f + 2f * clip.cropBottom, 1f - 2f * clip.cropTop)
             }
             EditedMediaItem.Builder(mediaItem)
                 .setEffects(Effects(emptyList(), videoEffects))
