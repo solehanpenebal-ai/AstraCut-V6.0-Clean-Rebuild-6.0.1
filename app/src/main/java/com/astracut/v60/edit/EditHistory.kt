@@ -11,7 +11,8 @@ data class Clip(
     var cropLeft: Float = 0f,
     var cropRight: Float = 0f,
     var cropTop: Float = 0f,
-    var cropBottom: Float = 0f
+    var cropBottom: Float = 0f,
+    var speed: Float = 1f
 ) {
     fun effectiveEnd(durationMs: Long): Long =
         if (endMs > 0L) endMs else durationMs
