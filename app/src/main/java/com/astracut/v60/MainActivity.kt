@@ -382,7 +382,7 @@ class MainActivity : Activity() {
                 .setUri(clip.uri)
                 .setClippingConfiguration(clipping)
                 .build()
-            val videoEffects = mutableListOf<androidx.media3.effect.Effect>()
+            val videoEffects = mutableListOf<Effect>()
             if (clip.rotationDegrees != 0f) {
                 videoEffects += ScaleAndRotateTransformation.Builder()
                     .setRotationDegrees(clip.rotationDegrees)
