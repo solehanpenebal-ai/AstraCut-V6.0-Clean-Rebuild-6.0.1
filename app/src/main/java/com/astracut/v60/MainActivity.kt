@@ -18,6 +18,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Effect
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.SpeedParameters
+import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Crop
 import androidx.media3.effect.ScaleAndRotateTransformation
@@ -410,7 +411,7 @@ class MainActivity : Activity() {
             }
             EditedMediaItem.Builder(mediaItem)
                 .setEffects(Effects(emptyList(), videoEffects))
-                .setSpeed(SpeedParameters(clip.speed, clip.speed))
+                .setSpeed(SpeedParameters(SpeedProvider { clip.speed.toDouble() }, false))
                 .setFrameRate(60)
                 .build()
         }
