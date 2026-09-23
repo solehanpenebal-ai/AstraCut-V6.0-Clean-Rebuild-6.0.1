@@ -6,7 +6,12 @@ data class Clip(
     val uri: Uri,
     var startMs: Long = 0L,
     var endMs: Long = -1L,
-    var label: String = "Clip"
+    var label: String = "Clip",
+    var rotationDegrees: Float = 0f,
+    var cropLeft: Float = 0f,
+    var cropRight: Float = 0f,
+    var cropTop: Float = 0f,
+    var cropBottom: Float = 0f
 ) {
     fun effectiveEnd(durationMs: Long): Long =
         if (endMs > 0L) endMs else durationMs
