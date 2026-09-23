@@ -15,13 +15,14 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Effect
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Crop
-import androidx.media3.effect.Effects
 import androidx.media3.effect.ScaleAndRotateTransformation
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.Effects
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
@@ -281,7 +282,7 @@ class MainActivity : Activity() {
                 .build()
         }
         if (clip.cropLeft != 0f || clip.cropRight != 0f || clip.cropTop != 0f || clip.cropBottom != 0f) {
-            effects += Crop(-clip.cropLeft, 1f - clip.cropRight, -clip.cropTop, 1f - clip.cropBottom)
+            effects += Crop(-1f + 2f * clip.cropLeft, 1f - 2f * clip.cropRight, -1f + 2f * clip.cropBottom, 1f - 2f * clip.cropTop)
         }
         player?.setVideoEffects(effects)
     }
