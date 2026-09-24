@@ -12,7 +12,11 @@ data class Clip(
     var cropRight: Float = 0f,
     var cropTop: Float = 0f,
     var cropBottom: Float = 0f,
-    var speed: Float = 1f
+    var speed: Float = 1f,
+    var volume: Float = 1f,
+    var muted: Boolean = false,
+    var fadeInMs: Long = 0L,
+    var fadeOutMs: Long = 0L
 ) {
     fun effectiveEnd(durationMs: Long): Long =
         if (endMs > 0L) endMs else durationMs
