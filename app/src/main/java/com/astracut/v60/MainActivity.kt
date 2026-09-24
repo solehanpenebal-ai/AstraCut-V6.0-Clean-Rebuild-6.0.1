@@ -61,6 +61,8 @@ class MainActivity : Activity() {
     private var selectedIndex = -1
     private val OPEN_VIDEO_REQUEST = 1001
     private val OPEN_AUDIO_REQUEST = 1002
+    private val OPEN_OVERLAY_REQUEST = 1003
+    private var overlayUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +108,17 @@ class MainActivity : Activity() {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                 }
                 startActivityForResult(intent, OPEN_VIDEO_REQUEST)
+            }
+        }, LinearLayout.LayoutParams(-1, 50))
+        root.addView(Button(this).apply {
+            text = "▣  IMPORT IMAGE OVERLAY"
+            setOnClickListener {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "image/*"
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                }
+                startActivityForResult(intent, OPEN_OVERLAY_REQUEST)
             }
         }, LinearLayout.LayoutParams(-1, 50))
         root.addView(Button(this).apply {
@@ -190,6 +203,12 @@ class MainActivity : Activity() {
     private fun actionButton(title: String, click: () -> Unit) = Button(this).apply {
         text = title
         setOnClickListener { click() }
+    }
+
+    private fun importOverlay(uri: Uri) {
+        overlayUri = uri
+        statusLabel.text = "Image overlay terpasang dan akan dipakai saat export."
+        refreshUi()
     }
 
     private fun importMusic(uri: Uri) {
