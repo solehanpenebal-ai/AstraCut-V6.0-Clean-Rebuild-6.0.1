@@ -460,7 +460,7 @@ class MainActivity : Activity() {
                 if (fadeOutUs > 0L && durationUs > 0L) builder.addFadeAt((durationUs - fadeOutUs).coerceAtLeast(0L), minOf(fadeOutUs, durationUs), DefaultGainProvider.FADE_OUT_LINEAR)
                 audioProcessors += GainProcessor(builder.build())
             }
-            val editedBuilder = EditedMediaItem.Builder(mediaItem)
+            EditedMediaItem.Builder(mediaItem)
                 .setEffects(Effects(audioProcessors, videoEffects))
                 .setRemoveAudio(clip.muted)
                 .setSpeed(object : SpeedProvider {
