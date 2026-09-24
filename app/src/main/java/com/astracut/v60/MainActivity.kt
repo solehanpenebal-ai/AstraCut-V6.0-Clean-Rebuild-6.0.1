@@ -15,6 +15,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.C
 import androidx.media3.common.Effect
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.SpeedParameters
@@ -411,7 +412,10 @@ class MainActivity : Activity() {
             }
             EditedMediaItem.Builder(mediaItem)
                 .setEffects(Effects(emptyList(), videoEffects))
-                .setSpeed(SpeedParameters(SpeedProvider { clip.speed.toDouble() }, false))
+                .setSpeed(object : SpeedProvider {
+                    override fun getNextSpeedChangeTimeUs(timeUs: Long): Long = C.TIME_UNSET
+                    override fun getSpeed(timeUs: Long): Float = clip.speed
+                })
                 .setFrameRate(60)
                 .build()
         }
