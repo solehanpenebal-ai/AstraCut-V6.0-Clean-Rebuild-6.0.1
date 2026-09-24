@@ -18,7 +18,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.C
 import androidx.media3.common.Effect
 import androidx.media3.common.PlaybackParameters
-import androidx.media3.common.SpeedParameters
+import androidx.media3.common.audio.DefaultGainProvider
+import androidx.media3.common.audio.GainProcessor
 import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Crop
@@ -156,6 +157,16 @@ class MainActivity : Activity() {
         editRow.addView(redoButton, LinearLayout.LayoutParams(0, 48, 1f))
         editRow.addView(splitButton, LinearLayout.LayoutParams(0, 48, 1f))
         root.addView(editRow)
+        val audioRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        audioRow.addView(actionButton("VOL 50%") { setVolumeSelected(0.5f) }, LinearLayout.LayoutParams(0, 48, 1f))
+        audioRow.addView(actionButton("VOL 100%") { setVolumeSelected(1f) }, LinearLayout.LayoutParams(0, 48, 1f))
+        audioRow.addView(actionButton("MUTE") { toggleMuteSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
+        root.addView(audioRow)
+        val fadeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fadeRow.addView(actionButton("FADE IN 1s") { setFadeSelected(1000L, null) }, LinearLayout.LayoutParams(0, 48, 1f))
+        fadeRow.addView(actionButton("FADE OUT 1s") { setFadeSelected(null, 1000L) }, LinearLayout.LayoutParams(0, 48, 1f))
+        fadeRow.addView(actionButton("NO FADE") { setFadeSelected(0L, 0L) }, LinearLayout.LayoutParams(0, 48, 1f))
+        root.addView(fadeRow)
         val transformRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         transformRow.addView(actionButton("ROTATE 90°") { rotateSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
         transformRow.addView(actionButton("CROP CENTER") { cropCenterSelected() }, LinearLayout.LayoutParams(0, 48, 1f))
@@ -206,6 +217,7 @@ class MainActivity : Activity() {
             exo.prepare()
             applyPreviewEffects()
             exo.playbackParameters = PlaybackParameters(clip.speed, clip.speed)
+            exo.volume = if (clip.muted) 0f else clip.volume
             exo.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
@@ -247,6 +259,34 @@ class MainActivity : Activity() {
         clip.endMs = pos
         refreshUi()
         statusLabel.text = "Clip " + (selectedIndex + 1) + ": OUT " + format(pos)
+    }
+
+    private fun setVolumeSelected(volume: Float) {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.volume = volume.coerceIn(0f, 1f)
+        clip.muted = false
+        player?.volume = clip.volume
+        statusLabel.text = "Volume clip: " + (clip.volume * 100f).toInt() + "%"
+        refreshUi()
+    }
+
+    private fun toggleMuteSelected() {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        clip.muted = !clip.muted
+        player?.volume = if (clip.muted) 0f else clip.volume
+        statusLabel.text = if (clip.muted) "Audio clip dimatikan." else "Audio clip diaktifkan."
+        refreshUi()
+    }
+
+    private fun setFadeSelected(fadeInMs: Long?, fadeOutMs: Long?) {
+        val clip = clips.getOrNull(selectedIndex) ?: return
+        saveHistory()
+        if (fadeInMs != null) clip.fadeInMs = fadeInMs
+        if (fadeOutMs != null) clip.fadeOutMs = fadeOutMs
+        statusLabel.text = "Fade audio diperbarui."
+        refreshUi()
     }
 
     private fun setSpeedSelected(speed: Float) {
@@ -402,6 +442,7 @@ class MainActivity : Activity() {
                 .setClippingConfiguration(clipping)
                 .build()
             val videoEffects = mutableListOf<Effect>()
+            val audioProcessors = mutableListOf<androidx.media3.common.audio.AudioProcessor>()
             if (clip.rotationDegrees != 0f) {
                 videoEffects += ScaleAndRotateTransformation.Builder()
                     .setRotationDegrees(clip.rotationDegrees)
@@ -410,8 +451,18 @@ class MainActivity : Activity() {
             if (clip.cropLeft != 0f || clip.cropRight != 0f || clip.cropTop != 0f || clip.cropBottom != 0f) {
                 videoEffects += Crop(-1f + 2f * clip.cropLeft, 1f - 2f * clip.cropRight, -1f + 2f * clip.cropBottom, 1f - 2f * clip.cropTop)
             }
-            EditedMediaItem.Builder(mediaItem)
-                .setEffects(Effects(emptyList(), videoEffects))
+            val fadeInUs = clip.fadeInMs.coerceAtLeast(0L) * 1000L
+            val fadeOutUs = clip.fadeOutMs.coerceAtLeast(0L) * 1000L
+            if (!clip.muted && (clip.volume != 1f || fadeInUs > 0L || fadeOutUs > 0L)) {
+                val durationUs = (end - clip.startMs).coerceAtLeast(0L) * 1000L
+                val builder = DefaultGainProvider.Builder(clip.volume.coerceIn(0f, 1f))
+                if (fadeInUs > 0L && durationUs > 0L) builder.addFadeAt(0L, minOf(fadeInUs, durationUs), DefaultGainProvider.FADE_IN_LINEAR)
+                if (fadeOutUs > 0L && durationUs > 0L) builder.addFadeAt((durationUs - fadeOutUs).coerceAtLeast(0L), minOf(fadeOutUs, durationUs), DefaultGainProvider.FADE_OUT_LINEAR)
+                audioProcessors += GainProcessor(builder.build())
+            }
+            val editedBuilder = EditedMediaItem.Builder(mediaItem)
+                .setEffects(Effects(audioProcessors, videoEffects))
+                .setRemoveAudio(clip.muted)
                 .setSpeed(object : SpeedProvider {
                     override fun getNextSpeedChangeTimeUs(timeUs: Long): Long = C.TIME_UNSET
                     override fun getSpeed(timeUs: Long): Float = clip.speed
